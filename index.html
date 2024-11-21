@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Vietlott Vui Vẻ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1 {
+            color: #ff6347;
+        }
+        .numbers {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .numbers button {
+            width: 50px;
+            height: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            border: 2px solid red;
+            border-radius: 50%;
+            background-color: white;
+            color: black;
+            transition: all 0.3s ease;
+        }
+        .numbers button:hover {
+            transform: scale(1.1);
+            background-color: #ffe4e1;
+            border-color: #ff6347;
+        }
+        .numbers button.selected {
+            background-color: #ff6347;
+            color: #fff;
+            border-color: #ff4500;
+            transform: scale(1.2);
+            box-shadow: 0 0 10px rgba(255, 99, 71, 0.8);
+        }
+        #chosen-numbers {
+            margin: 20px 0;
+        }
+        #controls {
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #ff6347;
+            color: #fff;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        button:hover {
+            background-color: #ff4500;
+            transform: scale(1.05);
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #result, #stats {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 80%;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        table th {
+            background-color: #ff6347;
+            color: #fff;
+        }
+        table td {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Game Vietlott Vui Vẻ</h1>
+    <p>Chọn 6 cặp số từ 01 đến 45:</p>
+    <div class="numbers" id="number-buttons"></div>
+    <div id="chosen-numbers">
+        <strong>Số đã chọn:</strong> <span id="selected-numbers">Không có</span>
+    </div>
+    <div id="controls">
+        <button id="start-button" disabled>Bắt đầu</button>
+        <button id="next-round-button" disabled>Chơi vòng tiếp theo</button>
+        <button id="reset-button">Chơi lại</button>
+    </div>
+    <div id="result"></div>
+    <div id="stats">
+        <p><strong>Thống kê:</strong></p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Kỳ chơi</th>
+                    <th>Kết quả</th>
+                    <th>Trùng số</th>
+                    <th>Kết quả chi tiết</th>
+                </tr>
+            </thead>
+            <tbody id="result-table">
+                <tr>
+                    <td colspan="4">Chưa có dữ liệu</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Tạo các nút số từ 01 đến 45
+        const numberButtons = document.getElementById('number-buttons');
+        for (let i = 1; i <= 45; i++) {
+            const button = document.createElement('button');
+            button.textContent = i.toString().padStart(2, '0');
+            button.onclick = () => selectNumber(i, button);
+            numberButtons.appendChild(button);
+        }
+
+        const selectedNumbers = [];
+        const maxNumbers = 6;
+        const gameData = {
+            rounds: 0,
+            matches: { miss: 0, match4: 0, match5: 0, match6: 0 },
+            results: []
+        };
+
+        function selectNumber(num, button) {
+            if (selectedNumbers.includes(num)) {
+                selectedNumbers.splice(selectedNumbers.indexOf(num), 1);
+                button.classList.remove('selected');
+            } else if (selectedNumbers.length < maxNumbers) {
+                selectedNumbers.push(num);
+                button.classList.add('selected');
+            }
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('selected-numbers').textContent =
+                selectedNumbers.length > 0 ? selectedNumbers.join(', ') : 'Không có';
+            document.getElementById('start-button').disabled = selectedNumbers.length !== maxNumbers;
+        }
+
+        function updateResultsTable() {
+            const tableBody = document.getElementById('result-table');
+            tableBody.innerHTML = '';
+            gameData.results.forEach((result, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${result.numbers.join(', ')}</td>
+                    <td>${result.matchedCount}</td>
+                    <td>${result.matchedNumbers.join(', ') || 'Không có'}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        document.getElementById('start-button').onclick = () => {
+            const resultNumbers = [];
+            while (resultNumbers.length < maxNumbers) {
+                const randomNumber = Math.floor(Math.random() * 45) + 1;
+                if (!resultNumbers.includes(randomNumber)) {
+                    resultNumbers.push(randomNumber);
+                }
+            }
+            const matchedNumbers = selectedNumbers.filter(num => resultNumbers.includes(num));
+            const matchCount = matchedNumbers.length;
+
+            // Cập nhật thống kê và lưu kết quả
+            gameData.rounds++;
+            if (matchCount <= 3) gameData.matches.miss++;
+            else if (matchCount === 4) gameData.matches.match4++;
+            else if (matchCount === 5) gameData.matches.match5++;
+            else if (matchCount === 6) gameData.matches.match6++;
+
+            gameData.results.push({
+                numbers: resultNumbers,
+                matchedCount: matchCount,
+                matchedNumbers: matchedNumbers
+            });
+
+            // Hiển thị kết quả
+            document.getElementById('result').innerHTML = `
+                <p>Kết quả: <strong>${resultNumbers.join(', ')}</strong></p>
+                <p>Bạn đã khớp <strong>${matchCount}</strong> số: ${matchedNumbers.join(', ') || 'Không có'}</p>
+            `;
+            updateResultsTable();
+
+            // Kích hoạt nút Chơi vòng tiếp theo
+            document.getElementById('next-round-button').disabled = false;
+        };
+
+        document.getElementById('next-round-button').onclick = () => {
+            selectedNumbers.length = 0;
+            document.querySelectorAll('.numbers button.selected').forEach(button => button.classList.remove('selected'));
+            updateUI();
+            document.getElementById('result').textContent = '';
+            document.getElementById('next-round-button').disabled = true;
+        };
+
+        document.getElementById('reset-button').onclick = () => {
+            selectedNumbers.length = 0;
+            gameData.rounds = 0;
+            gameData.matches = { miss: 0, match4: 0, match5: 0, match6: 0 };
+            gameData.results = [];
+            document.querySelectorAll('.numbers button.selected').forEach(button => button.classList.remove('selected'));
+            updateUI();
+            document.getElementById('result').textContent = '';
+            updateResultsTable();
+            document.getElementById('next-round-button').disabled = true;
+        };
+    </script>
+</body>
+</html>
